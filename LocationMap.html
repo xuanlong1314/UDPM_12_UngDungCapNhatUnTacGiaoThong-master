@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ứng dụng cập nhật ùn tắc giao thông</title>
+    <!-- Include Leaflet CSS and JavaScript -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Set styles for map container -->
+    <link rel="stylesheet" href="map.css">
+    <style>
+        #map {
+            height: 600px;
+            /* Set the height of the map container */
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <h1>Ứng dụng theo dõi và cập nhật ùn tắc giao thông</h1>
+        <div class="search-container">
+            <input type="text" id="startInput" placeholder="Điểm bắt đầu">
+            <input type="text" id="endInput" placeholder="Điểm kết thúc">
+            <button onclick="calculateRoute()">Tìm Kiếm</button>
+        </div>
+    </header>
+    <!-- Create a div for the map -->
+    <div id="map"></div>
+
+    <!-- Add JavaScript to initialize the map -->
+    <script>
+        var map = L.map('map').setView([16.5, 106], 6); // Set initial coordinates and zoom level
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var vietnamMarker = L.marker([16.5, 106]).addTo(map);
+        vietnamMarker.bindPopup("<b>Vietnam</b>").openPopup();
+
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                var latitude = position.coords.latitude;
+                var longitude = position.coords.longitude;
+                L.marker([latitude, longitude]).addTo(map)
+                    .bindPopup("<b>Vị trí của bạn</b>").openPopup();
+                map.setView([latitude, longitude], 10);
+            }, function (error) {
+                console.error('Error:', error);
+                alert("Geolocation is not available in your browser.");
+            });
+        } else {
+            console.log('Geolocation is not supported by your browser');
+        }
+
+        // Function to search for streets
+        function searchStreet() {
+            var searchText = document.getElementById('searchInput').value;
+            fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/' + searchText + '.json?access_token=YOUR_MAPBOX_ACCESS_TOKEN')
+                .then(response => response.json())
+                .then(data => {
+                    var features = data.features;
+                    if (features && features.length > 0) {
+                        var result = features[0];
+                        var coordinates = result.center;
+                        var latitude = coordinates[1];
+                        var longitude = coordinates[0];
+                        map.setView([latitude, longitude], 14);
+                        L.marker([latitude, longitude]).addTo(map)
+                            .bindPopup("<b>" + result.text + "</b>").openPopup();
+                    } else {
+                        alert("Location not found.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("An error occurred while searching for the location.");
+                });
+        }
+
+        // Function to calculate and display route
+        function calculateRoute() {
+            var start = document.getElementById('startInput').value;
+            var end = document.getElementById('endInput').value;
+            fetch('https://api.mapbox.com/directions/v5/mapbox/driving/' + start + ';' + end + '?access_token=YOUR_MAPBOX_ACCESS_TOKEN')
+                .then(response => response.json())
+                .then(data => {
+                    var route = data.routes[0];
+                    var geometry = route.geometry;
+                    var polyline = L.polyline(L.PolylineUtil.decode(geometry), { color: 'blue' }).addTo(map);
+                    map.fitBounds(polyline.getBounds());
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("Chức năng đang được phát triển, vui lòng quay lại sau!");
+                });
+        }
+    </script>
+
+    <footer class="footer">
+        <div class="footer-column">
+            <h2>Thông Tin Liên Hệ</h2>
+            <ul>
+                <li><a href="#">abc@gmail.com</a></li>
+                <li><a href="#">0969797979</a></li>
+                <img src="../img/appstore1.png" alt="APPSTORE" style="width: 150px; height: 80px; float: right;" />
+                <img src="../img/android1.png" alt="ADR" style="width: 150px; height: 80px; float: right;" />
+            </ul>
+        </div>
+        <div class="footer-column">
+            <img src="../img/vnpay_logo.png" alt="VNP" style="width: 150px; height: 80px; float: right;" />
+            <p class="column-1">
+                Tòa nhà FPT Polytechnic, <br>Phố Trịnh Văn Bô, Nam Từ Liêm, Hà Nội
+            </p>
+
+        </div>
+        </div>
+        <div class="footer-column">
+            <h2>TÀI KHOẢN CỦA TÔI</h2>
+            <ul>
+                <li><a href="login.html">Đăng nhập</a></li>
+                <li><a href="#">Tạo mới tài khoản</a></li>
+                <li><a href="#">Chi tiết tài khoản</a></li>
+                <li><a href="#">Lịch sử</a></li>
+            </ul>
+        </div>
+    </footer>
+</body>
+
+</html>
